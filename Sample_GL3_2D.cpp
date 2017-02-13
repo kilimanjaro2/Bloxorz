@@ -2,6 +2,8 @@
 #include <cmath>
 #include <fstream>
 #include <vector>
+#include <ao/ao.h>
+#include <mpg123.h>
 
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -12,7 +14,7 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 //#define color_bit = #a0d233
-
+#define BITS 8
 using namespace std;
 
 struct VAO {
@@ -33,8 +35,15 @@ int level_pass[10]={0}, level_number = 0, level_start[10], level_end[10], horizo
 int standing_bit = 1, move_left = 0, move_right = 0, move_up = 0, move_down = 0,sleeping_x = 0, sleeping_z = 0, move_clock = 0, move_anti = 0;
 int next_left = 90, next_right = -90, next_up = 90, next_down =-90, hor_count = 0, ver_count = 0, next_clock = 90, next_anti = -90,rot_count = 0;
 float tile_rotation = 0;
-vector <float> tile_x = {0, 0, 0, -0.60, -0.60, -0.60, 0.60, 0.60, 0.60, 1.20};
-vector <float> tile_z = {0, 0.60, -0.60, 0, -0.60, 0.60, 0, -0.60, 0.60, 0};
+int vis = 0;
+vector <float> finish_tile_x ={3.0,3.6,1.8};
+vector <float> finish_tile_z ={0,0,0};
+vector <float> tile_x = {/*level 0 : 14*/0, 0, 0, -0.60, -0.60, -0.60, 0.60, 0.60, 0.60, 1.20,1.80,2.40,0,3,
+                         /*level 1 : 29*/0, 0, 0, -0.60, -0.60, -0.60, 0.60, 0.60, 0.60, 1.20,1.80,2.40,0,3,0,0,0,0.6,1.2,1.8,2.4,3.0,2.4,3.0,2.4,3.0,2.4,3.0,0,
+                         /*level 2 : 16*/0, 0, 0, -0.60, -0.60, -0.60, 0.60, 0.60, 0.60, 1.20,1.80,2.40,0,3,3.6,4.2};
+vector <float> tile_z = {/*level 0 : 14*/0, 0.60, -0.60, 0, -0.60, 0.60, 0, -0.60, 0.60, 0,0,0,0,3.6,
+                         /*level 1 : 29*/0, 0.60, -0.60, 0, -0.60, 0.60, 0, -0.60, 0.60, 0,0,0,0,0,-1.2,-1.8,-2.4,-2.4,-2.4,-2.4,-2.4,-2.4,-1.8,-1.8,-1.2,-1.2,-0.6,-0.6,0,
+                         /*level 2 : 16*/0, 0.60, -0.60, 0, -0.60, 0.60, 0, -0.60, 0.60, 0,0,0,0,0,0,0};
 
 struct GLMatrices {
     glm::mat4 projectionO, projectionP;
@@ -248,20 +257,16 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
             break;
         case GLFW_KEY_LEFT:
             move_left = 1;
-            hor_count--;
             //rectangle_rotation -= 90;
             break;
         case GLFW_KEY_RIGHT:
             move_right = 1;
-            hor_count++;
             break;
         case GLFW_KEY_UP:
             move_up = 1;
-            ver_count++;
             break;
         case GLFW_KEY_DOWN:
             move_down = 1;
-            ver_count--;
             break;
         default:
             break;
@@ -355,10 +360,240 @@ void reshapeWindow (GLFWwindow* window, int width, int height)
     Matrices.projectionO = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, 0.1f, 500.0f);
 }
 
-VAO *tile, *rectangle, *finish_tile, *bridge_tile;
+VAO *tile, *rectangle, *finish_tile, *bridge_tile, *teleport_tile;
 
 // Creates the triangle object used in this sample code
 void createTile ()
+{
+    /* ONLY vertices between the bounds specified in glm::ortho will be visible on screen */
+
+    /* Define vertex array as used in glBegin (GL_TRIANGLES) */
+    static const GLfloat vertex_buffer_data [] = {
+        -0.3,-0.06,-0.3, // triangle 1 : begin
+        -0.3,-0.06, 0.3,
+        -0.3, 0.06, 0.3, // triangle 1 : end
+
+        0.3, 0.06,-0.3, // triangle 2 : begin
+        -0.3,-0.06,-0.3,
+        -0.3, 0.06,-0.3, // triangle 2 : end
+
+        0.3,-0.06, 0.3,
+        -0.3,-0.06,-0.3,
+        0.3,-0.06,-0.3,
+
+        0.3, 0.06,-0.3,
+        0.3,-0.06,-0.3,
+        -0.3,-0.06,-0.3,
+
+        -0.3,-0.06,-0.3,
+        -0.3, 0.06, 0.3,
+        -0.3, 0.06,-0.3,
+
+        0.3,-0.06, 0.3,
+        -0.3,-0.06, 0.3,
+        -0.3,-0.06,-0.3,
+
+        -0.3, 0.06, 0.3,
+        -0.3,-0.06, 0.3,
+        0.3,-0.06, 0.3,
+
+        0.3, 0.06, 0.3,
+        0.3,-0.06,-0.3,
+        0.3, 0.06,-0.3,
+
+        0.3,-0.06,-0.3,
+        0.3, 0.06, 0.3,
+        0.3,-0.06, 0.3,
+
+        0.3, 0.06, 0.3,
+        0.3, 0.06,-0.3,
+        -0.3, 0.06,-0.3,
+
+        0.3, 0.06, 0.3,
+        -0.3, 0.06,-0.3,
+        -0.3, 0.06, 0.3,
+
+        0.3, 0.06, 0.3,
+        -0.3, 0.06, 0.3,
+        0.3,-0.06, 0.3
+    };
+
+    static const GLfloat color_buffer_data [] = {
+
+
+        1,0,0, // color 0
+        1,0,0, // color 1
+        1,0,0, // color 2
+
+        1,0,0, // color 0
+        1,0,0, // color 1
+        1,0,0, // color 2
+
+        1,0,0, // color 0
+        1,0,0, // color 1
+        1,0,0, // color 2
+
+        1,0,0, // color 0
+        1,0,0, // color 1
+        1,0,0, // color 2
+
+        1,0,0, // color 0
+        1,0,0, // color 1
+        1,0,0, // color 2
+
+        1,0,0, // color 0
+        1,0,0, // color 1
+        1,0,0, // color 2
+
+        1,0,0, // color 0
+        1,0,0, // color 1
+        1,0,0, // color 2
+
+        1,0,0, // color 0
+        1,0,0, // color 1
+        1,0,0, // color 2
+
+        1,0,0, // color 0
+        1,0,0, // color 1
+        1,0,0, // color 2
+
+        0.1,0.1,1, // color 0
+        0.5,0.4,1, // color 1
+        0.2,0.2,1, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+
+        1,0,0, // color 0
+        1,0,0, // color 1
+        1,0,0, // color 2
+    };
+
+    // create3DObject creates and returns a handle to a VAO that can be used later
+    tile = create3DObject(GL_TRIANGLES, 36, vertex_buffer_data, color_buffer_data, GL_FILL);
+}
+
+void createFinishTile ()
+{
+    /* ONLY vertices between the bounds specified in glm::ortho will be visible on screen */
+
+    /* Define vertex array as used in glBegin (GL_TRIANGLES) */
+    static const GLfloat vertex_buffer_data [] = {
+        -0.3,-0.06,-0.3, // triangle 1 : begin
+        -0.3,-0.06, 0.3,
+        -0.3, 0.06, 0.3, // triangle 1 : end
+
+        0.3, 0.06,-0.3, // triangle 2 : begin
+        -0.3,-0.06,-0.3,
+        -0.3, 0.06,-0.3, // triangle 2 : end
+
+        0.3,-0.06, 0.3,
+        -0.3,-0.06,-0.3,
+        0.3,-0.06,-0.3,
+
+        0.3, 0.06,-0.3,
+        0.3,-0.06,-0.3,
+        -0.3,-0.06,-0.3,
+
+        -0.3,-0.06,-0.3,
+        -0.3, 0.06, 0.3,
+        -0.3, 0.06,-0.3,
+
+        0.3,-0.06, 0.3,
+        -0.3,-0.06, 0.3,
+        -0.3,-0.06,-0.3,
+
+        -0.3, 0.06, 0.3,
+        -0.3,-0.06, 0.3,
+        0.3,-0.06, 0.3,
+
+        0.3, 0.06, 0.3,
+        0.3,-0.06,-0.3,
+        0.3, 0.06,-0.3,
+
+        0.3,-0.06,-0.3,
+        0.3, 0.06, 0.3,
+        0.3,-0.06, 0.3,
+
+        0.3, 0.06, 0.3,
+        0.3, 0.06,-0.3,
+        -0.3, 0.06,-0.3,
+
+        0.3, 0.06, 0.3,
+        -0.3, 0.06,-0.3,
+        -0.3, 0.06, 0.3,
+
+        0.3, 0.06, 0.3,
+        -0.3, 0.06, 0.3,
+        0.3,-0.06, 0.3
+    };
+
+    static const GLfloat color_buffer_data [] = {
+
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
+    };
+
+    // create3DObject creates and returns a handle to a VAO that can be used later
+    finish_tile = create3DObject(GL_TRIANGLES, 36, vertex_buffer_data, color_buffer_data, GL_FILL);
+}
+
+void createTeleportTile ()
 {
     /* ONLY vertices between the bounds specified in glm::ortho will be visible on screen */
 
@@ -451,21 +686,22 @@ void createTile ()
         1,0,0, // color 1
         1,0,0, // color 2
 
-        1,0,0, // color 0
-        1,0,0, // color 1
-        1,0,0, // color 2
+        1,0.1,0.1, // color 0
+        1,0.4,0.5, // color 1
+        1,0.2,0.2, // color 2
+
+        0,0,0, // color 0
+        0,0,0, // color 1
+        0,0,0, // color 2
 
         1,0,0, // color 0
         1,0,0, // color 1
         1,0,0, // color 2
 
-        1,0,0, // color 0
-        1,0,0, // color 1
-        1,0,0, // color 2
     };
 
     // create3DObject creates and returns a handle to a VAO that can be used later
-    tile = create3DObject(GL_TRIANGLES, 36, vertex_buffer_data, color_buffer_data, GL_FILL);
+    teleport_tile = create3DObject(GL_TRIANGLES, 36, vertex_buffer_data, color_buffer_data, GL_FILL);
 }
 
 // Creates the rectangle object used in this sample code
@@ -523,53 +759,49 @@ void createRectangle ()
     };
 
     static const GLfloat color_buffer_data [] = {
-        0,1,0.2, // color 1
-        0,1,0.2, // color 2
-        0,1,0.2, // color 3
 
-        0,0.1,0.3, // color 1
-        0,0.1,0.3, // color 3
-        0,0.1,0.3,  // color 4
+        0.2,0.1,0, // color 0
+        0.2,0.4,0.3, // color 1
+        0.2,0.5,0.3, // color 2
 
-        0,1,0.2, // color 1
-        0,1,0.2, // color 2
-        0,1,0.2, // color 3
+        0.2,0.4,0.3, // color 1
+        0.2,0.1,0, // color 0
+        0.2,0.5,0.3, // color 2
+        0.2,0.1,0, // color 0
+        0.2,0.4,0.3, // color 1
+        0.2,0.5,0.3, // color 2
 
-        0,0.1,0.3, // color 1
-        0,0.1,0.3, // color 3
-        0,0.1,0.3,  // color 4
+        0.2,0.4,0.3, // color 1
+        0.2,0.1,0, // color 0
+        0.2,0.5,0.3, // color 2
+        0.2,0.1,0, // color 0
+        0.2,0.4,0.3, // color 1
+        0.2,0.5,0.3, // color 2
 
-        0,1,0.2, // color 1
-        0,1,0.2, // color 2
-        0,1,0.2, // color 3
+        0.2,0.4,0.3, // color 1
+        0.2,0.1,0, // color 0
+        0.2,0.5,0.3, // color 2
+        0.2,0.1,0, // color 0
+        0.2,0.4,0.3, // color 1
+        0.2,0.5,0.3, // color 2
 
-        0,0.1,0.3, // color 1
-        0,0.1,0.3, // color 3
-        0,0.1,0.3,  // color 4
+        0.2,0.4,0.3, // color 1
+        0.2,0.1,0, // color 0
+        0.2,0.5,0.3, // color 2
+        0.2,0.1,0, // color 0
+        0.2,0.4,0.3, // color 1
+        0.2,0.5,0.3, // color 2
 
-        0,1,0.2, // color 1
-        0,1,0.2, // color 2
-        0,1,0.2, // color 3
+        0.2,0.4,0.3, // color 1
+        0.2,0.1,0, // color 0
+        0.2,0.5,0.3, // color 2
+        0.2,0.1,0, // color 0
+        0.2,0.4,0.3, // color 1
+        0.2,0.5,0.3, // color 2
 
-        0,0.1,0.3, // color 1
-        0,0.1,0.3, // color 3
-        0,0.1,0.3,  // color 4
-
-        0,1,0.2, // color 1
-        0,1,0.2, // color 2
-        0,1,0.2, // color 3
-
-        0,0.1,0.3, // color 1
-        0,0.1,0.3, // color 3
-        0,0.1,0.3,  // color 4
-
-        0,1,0.2, // color 1
-        0,1,0.2, // color 2
-        0,1,0.2, // color 3
-
-        0,0.1,0.3, // color 1
-        0,0.1,0.3, // color 3
-        0,0.1,0.3,  // color 4
+        0.2,0.4,0.3, // color 1
+        0.2,0.1,0, // color 0
+        0.2,0.5,0.3, // color 2
     };
 
     // create3DObject creates and returns a handle to a VAO that can be used later
@@ -592,7 +824,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     glUseProgram(programID);
 
     // Eye - Location of camera. Don't change unless you are sure!!
-    glm::vec3 eye ( /*5*cos(camera_rotation_angle*M_PI/180.0f)*/-2, 3, 5*sin(camera_rotation_angle*M_PI/180.0f) );
+    glm::vec3 eye ( /*5*cos(camera_rotation_angle*M_PI/180.0f)*/0, 3, 5/**sin(camera_rotation_angle*M_PI/180.0f)*/ );
     // Target - Where is the camera looking at.  Don't change unless you are sure!!
     glm::vec3 target (0, 0, 0);
     // Up - Up vector defines tilt of camera.  Don't change unless you are sure!!
@@ -613,8 +845,12 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     glm::mat4 MVP;	// MVP = Projection * View * Model
 
     int i;
+    //cout << level_number << endl << endl << endl;
     for(i=level_start[level_number];i<level_end[level_number];i++)
     {
+        if(abs(4-rect_pos.x)>=0.01)
+        {
+        //cout << i << " " << level_end[level_number] << endl;
         // Load identity to model matrix
         Matrices.model = glm::mat4(1.0f);
 
@@ -630,6 +866,41 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
 
         // draw3DObject draws the VAO given to it using current MVP matrix
         draw3DObject(tile);
+        }
+    }
+
+    Matrices.model = glm::mat4(1.0f);
+
+    /* Render your scene */
+    glm::mat4 translateFinishTile = glm::translate (glm::vec3(finish_tile_x[level_number],0,finish_tile_z[level_number])); // glTranslatef
+    glm::mat4 rotateFinishTile = glm::rotate((float)(0*M_PI/180.0f), glm::vec3(0,0,1));  // rotate about vector (1,0,0)
+    glm::mat4 finishTileTransform = translateFinishTile * rotateFinishTile;
+    Matrices.model *= finishTileTransform;
+    MVP = VP * Matrices.model; // MVP = p * V * M
+
+    //  Don't change unless you are sure!!
+    glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+    // draw3DObject draws the VAO given to it using current MVP matrix
+    draw3DObject(finish_tile);
+
+    if(level_number == 2)
+    {
+        //cout << "NOOOO" << endl;
+        Matrices.model = glm::mat4(1.0f);
+
+        /* Render your scene */
+        glm::mat4 translateTeleportTile = glm::translate (glm::vec3(-0.6,0,0.6)); // glTranslatef
+        glm::mat4 rotateTeleportTile = glm::rotate((float)(0*M_PI/180.0f), glm::vec3(0,0,1));  // rotate about vector (1,0,0)
+        glm::mat4 teleportTileTransform = translateTeleportTile * rotateTeleportTile;
+        Matrices.model *= teleportTileTransform;
+        MVP = VP * Matrices.model; // MVP = p * V * M
+
+        //  Don't change unless you are sure!!
+        glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+        // draw3DObject draws the VAO given to it using current MVP matrix
+        draw3DObject(teleport_tile);
     }
 
     // Pop matrix to undo transformations till last push matrix instead of recomputing model matrix
@@ -637,6 +908,11 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     Matrices.model = glm::mat4(1.0f);
     if(move_left == 1 && horizontal_angle_moved < next_left && standing_bit == 1)
     {
+        if(vis == 0)
+        {
+            hor_count --;
+            vis = 1;
+        }
         rect_pos.y -= 0.03;
         rect_pos.x -=0.09;
         horizontal_angle_moved += 9;
@@ -648,10 +924,16 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
             sleeping_z = 0;
             next_left += 90;
             next_right += 90;
+            vis = 0;
         }
     }
     else if(move_left == 1 && horizontal_angle_moved < next_left && /*standing_bit == 0*/ sleeping_x == 1)
     {
+        if(vis == 0)
+        {
+            hor_count --;
+            vis = 1;
+        }
         rect_pos.y += 0.03;
         rect_pos.x -=0.09;
         horizontal_angle_moved += 9;
@@ -663,10 +945,16 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
             next_right +=90;
             sleeping_x = 0;
             sleeping_z = 0;
+            vis = 0;
         }
     }
     else if(move_left == 1 && torsion_angle_moved > next_anti && sleeping_z ==1)
     {
+        if(vis==0)
+        {
+            vis = 1;
+            rot_count--;
+        }
         rect_pos.x -=0.06;
         torsion_angle_moved -= 9;
         /*if(abs(rot_count)%4==2)
@@ -689,25 +977,37 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
             next_anti -=90;
             sleeping_x = 0;
             standing_bit = 0;
+            vis = 0;
         }
     }
     else if(move_right == 1 && horizontal_angle_moved > next_right && standing_bit == 1)
     {
-       rect_pos.y -= 0.03;
-       rect_pos.x += 0.09;
-       horizontal_angle_moved -= 9;
-       if(horizontal_angle_moved == next_right)
-       {
-           standing_bit = 0;
-           move_right = 0;
-           next_right -= 90;
-           next_left -= 90;
-           sleeping_x = 1;
-           sleeping_z = 0;
-       }
+        if(vis==0)
+        {
+            hor_count++;
+            vis =1;
+        }
+        rect_pos.y -= 0.03;
+        rect_pos.x += 0.09;
+        horizontal_angle_moved -= 9;
+        if(horizontal_angle_moved == next_right)
+        {
+            standing_bit = 0;
+            move_right = 0;
+            next_right -= 90;
+            next_left -= 90;
+            sleeping_x = 1;
+            sleeping_z = 0;
+            vis = 0;
+        }
     }
     else if(move_right == 1 && horizontal_angle_moved > next_right && sleeping_x == 1)
     {
+        if(vis == 0)
+        {
+            hor_count ++;
+            vis = 1;
+        }
         rect_pos.y += 0.03;
         rect_pos.x += 0.09;
         horizontal_angle_moved -= 9;
@@ -719,10 +1019,16 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
             next_left -= 90;
             sleeping_x = 0;
             sleeping_z = 0;
+            vis = 0;
         }
     }
     else if(move_right == 1 && torsion_angle_moved < next_clock && sleeping_z == 1)
     {
+        if(vis==0)
+        {
+            rot_count++;
+            vis = 1;
+        }
         rect_pos.x +=0.06;
         torsion_angle_moved += 9;
         if(torsion_angle_moved == next_clock)
@@ -732,6 +1038,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
             next_anti += 90;
             sleeping_x = 0;
             standing_bit = 0;
+            vis = 0;
         }
     }
     else if(move_up == 1 && vertical_angle_moved > next_down && standing_bit == 1)
@@ -740,7 +1047,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         rect_pos.y -=0.03;
 
         vertical_angle_moved -= 9;
-        /*if(abs(hor_count)%4==2)
+        if(abs(hor_count)%4==2)
         {
             vertical_angle_moved +=18;
             if(vertical_angle_moved == next_up)
@@ -751,8 +1058,9 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
                 standing_bit = 0;
                 sleeping_x = 0;
                 sleeping_z = 1;
+                vis = 0;
             }
-        }*/
+        }
         if(vertical_angle_moved == next_down)
         {
             standing_bit = 0;
@@ -769,7 +1077,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         rect_pos.y += 0.03;
         //cout << "LOL" << endl;
         vertical_angle_moved -=9;
-        /*if(abs(hor_count)%4==2)
+        if(abs(hor_count)%4==2)
         {
             vertical_angle_moved +=18;
             if(vertical_angle_moved == next_up)
@@ -780,8 +1088,9 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
                 standing_bit = 1;
                 sleeping_x = 0;
                 sleeping_z = 0;
+                vis = 0;
             }
-        }*/
+        }
         if(vertical_angle_moved == next_down)
         {
             standing_bit = 1;
@@ -808,7 +1117,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         rect_pos.z += 0.09;
         rect_pos.y -= 0.03;
         vertical_angle_moved +=9;
-        /*if(abs(hor_count)%4==2)
+        if(abs(hor_count)%4==2)
         {
             vertical_angle_moved -=18;
             if(vertical_angle_moved == next_down)
@@ -819,8 +1128,9 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
                 move_down = 0;
                 next_up-=90;
                 next_down -=90;
+                vis = 0;
             }
-        }*/
+        }
         if(vertical_angle_moved == next_up)
         {
             standing_bit = 0;
@@ -836,7 +1146,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         rect_pos.z +=0.09;
         rect_pos.y +=0.03;
         vertical_angle_moved +=9;
-        /*if(abs(hor_count)%4==2)
+        if(abs(hor_count)%4==2)
         {
             vertical_angle_moved -=18;
             if(vertical_angle_moved == next_down)
@@ -847,8 +1157,9 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
                 move_down = 0;
                 next_up-=90;
                 next_down -=90;
+                vis = 0;
             }
-        }*/
+        }
         if(vertical_angle_moved == next_up)
         {
             standing_bit =1;
@@ -871,8 +1182,11 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
             next_anti -=90;
         }
     }
-   // cout << "angle_moved " << vertical_angle_moved  << endl << "next_up " << next_up << endl <<"next_down " << next_down << endl;
-   // cout << "x " << rect_pos.x << endl << "y" << rect_pos.y << endl <<"z" << rect_pos.z << endl;
+    //cout << hor_count << " " << ver_count << endl;
+    //cout << rect_pos.x <<endl << finish_tile_x[level_number] << endl << endl<< rect_pos.z << endl <<finish_tile_z[level_number]<< endl;
+
+    // cout << "angle_moved " << vertical_angle_moved  << endl << "next_up " << next_up << endl <<"next_down " << next_down << endl;
+    // cout << "x " << rect_pos.x << endl << "y" << rect_pos.y << endl <<"z" << rect_pos.z << endl;
     rectangle_rotation = horizontal_angle_moved;
     glm::mat4 translateRectangle = glm::translate (rect_pos);        // glTranslatef
     glm::mat4 rotateRectangle = glm::rotate((float)(horizontal_angle_moved*M_PI/180.0f), glm::vec3(0,0,1)); // rotate about vector (-1,1,1)
@@ -934,8 +1248,10 @@ void initGL (GLFWwindow* window, int width, int height)
 {
     /* Objects should be created before any other gl function and shaders */
     // Create the models
-    createTile (); // Generate the VAO, VBOs, vertices data & copy into the array buffer
+    createTile ();// Generate the VAO, VBOs, vertices data & copy into the array buffer
+    createFinishTile();
     createRectangle ();
+    createTeleportTile();
 
     glClearColor (0.3f, 0.3f, 0.3f, 0.0f); // R, G, B, A
     glClearDepth (1.0f);
@@ -963,14 +1279,55 @@ void initGL (GLFWwindow* window, int width, int height)
 
 int main (int argc, char** argv)
 {
+
+    //level_number= 2;
+    mpg123_handle *mh;
+        unsigned char *buffer;
+        size_t buffer_size;
+        size_t done;
+        int err;
+
+        int driver;
+        ao_device *dev;
+
+        ao_sample_format format;
+        int channels, encoding;
+        long rate;
+
+        // if(argc < 2)
+        //   exit(0);
+
+        /* initializations */
+        ao_initialize();
+        driver = ao_default_driver_id();
+        mpg123_init();
+        mh = mpg123_new(NULL, &err);
+        buffer_size = 3200;
+        buffer = (unsigned char*) malloc(buffer_size * sizeof(unsigned char));
+
+        /* open the file and get the decoding format */
+        mpg123_open(mh, "q.mp3");
+        mpg123_getformat(mh, &rate, &channels, &encoding);
+
+        /* set the output format and open the output device */
+        format.bits = mpg123_encsize(encoding) * BITS;
+        format.rate = rate;
+        format.channels = channels;
+        format.byte_format = AO_FMT_NATIVE;
+        format.matrix = 0;
+        dev = ao_open_live(driver, &format, NULL);
+
     int width = 600;
     int height = 600;
     proj_type = 1;
     tri_pos = glm::vec3(0, 0, 0);
     rect_pos = glm::vec3(-0.6, 0.66, 0);
     level_start[0] = 0;
-    level_end[0] = 10;
-
+    level_end[0] = 13;
+    level_start[1] = 14;
+    level_end[1] =43;
+    level_start[2] = 43;
+    level_end[2] = 58;
 
 
 
@@ -986,11 +1343,35 @@ int main (int argc, char** argv)
         // clear the color and depth in the frame buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        if (mpg123_read(mh, buffer, buffer_size, &done) == MPG123_OK)
+            ao_play(dev, (char*) buffer, done);
+        else mpg123_seek(mh, 0, SEEK_SET);
+
         // OpenGL Draw commands
         draw(window, 0, 0, 1, 1);
         // proj_type ^= 1;
         // draw(window, 0.5, 0, 0.5, 1);
         // proj_type ^= 1;
+        //cout << fabs(rect_pos.z - finish_tile_z[level_number]);
+        if(standing_bit==1 && fabs(rect_pos.x - finish_tile_x[level_number])<=0.001 && fabs(rect_pos.z - finish_tile_z[level_number])<=0.001)
+        {
+            level_number++;
+            rect_pos.x = -0.6;
+            rect_pos.y = 0.66;
+            rect_pos.z = 0;
+            hor_count = 0;
+            ver_count = 0;
+            rot_count = 0;
+        }
+        int i;
+        if(level_number == 2 && standing_bit == 1)
+        {
+            if (abs(rect_pos.x + 0.6) <=0.01 && abs(rect_pos.z - 0.6)<=0.01)
+            {
+                rect_pos.x= 3.6;
+                rect_pos.z = 0 ;
+            }
+        }
 
         // Swap Frame Buffer in double buffering
         glfwSwapBuffers(window);
@@ -1005,7 +1386,13 @@ int main (int argc, char** argv)
             last_update_time = current_time;
         }
     }
-
+    free(buffer);
+    ao_close(dev);
+    mpg123_close(mh);
+    mpg123_delete(mh);
+    mpg123_exit();
+    ao_shutdown();
     glfwTerminate();
+    return 0;
     //    exit(EXIT_SUCCESS);
 }

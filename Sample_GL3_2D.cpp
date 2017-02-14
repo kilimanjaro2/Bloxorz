@@ -28,14 +28,19 @@ struct VAO {
 };
 typedef struct VAO VAO;
 
-float camera_rotation_angle = 90;
 float rectangle_rotation = 0;
 float triangle_rotation = 0;
+int right_mouse_clicked = 0, left_mouse_clicked = 0;
 int level_pass[10]={0}, level_number = 0, level_start[10], level_end[10], horizontal_angle_moved = 0, vertical_angle_moved = 0, torsion_angle_moved = 0;
 int standing_bit = 1, move_left = 0, move_right = 0, move_up = 0, move_down = 0,sleeping_x = 0, sleeping_z = 0, move_clock = 0, move_anti = 0;
 int next_left = 90, next_right = -90, next_up = 90, next_down =-90, hor_count = 0, ver_count = 0, next_clock = 90, next_anti = -90,rot_count = 0;
 float tile_rotation = 0;
-int vis = 0, in_animation = 0, is_falling = 0,view_number = 1, time_counter = 0,moves_counter = 0;
+float cameraxdef = 5, cameraydef = 4, camerazdef = 5, camerax = cameraxdef, cameray = cameraydef, cameraz = camerazdef;
+float targetx = 0, targety = 0, targetz = 0;
+int vis = 0, blockview = 0, defview = 1, topview = 0, blockangle = 90, followview = 0;
+float camera_zoom = 0.2;
+float camera_rotation_angle = 90;
+int in_animation = 0, is_falling = 0,view_number = 1, time_counter = 0,moves_counter = 0;
 vector <float> finish_tile_x ={3.0,3.6,1.8};
 vector <float> finish_tile_z ={0,0,0};
 vector <float> tile_x = {/*level 0 : 14*/0, 0, 0, -0.60, -0.60, -0.60, 0.60, 0.60, 0.60, 1.20,1.80,2.40,0,3,
@@ -52,6 +57,12 @@ struct GLMatrices {
     glm::mat4 view;
     GLuint MatrixID;
 } Matrices;
+
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
+{
+    camera_zoom += yoffset / 10;
+}
+
 
 GLuint programID;
 int proj_type;
@@ -299,6 +310,117 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 void keyboardChar (GLFWwindow* window, unsigned int key)
 {
     switch (key) {
+    case 'o':
+        if(blockview == 1)
+        {
+            blockangle += 5;
+            targetx = 1 * cos(blockangle * M_PI / 180) + rect_pos.x;
+            targety = 0;
+            targetz = 1 * sin(blockangle * M_PI / 180) + rect_pos.z;
+        }
+        else
+        {
+            camera_rotation_angle += 5;
+        }
+        break;
+    case 'p':
+        if(blockview == 1)
+        {
+            blockangle -= 5;
+            targetx = 1 * cos(blockangle * M_PI / 180) + rect_pos.x;
+            targety = 0;
+            targetz = 1 * sin(blockangle * M_PI / 180) + rect_pos.z;
+        }
+        else
+        {
+            camera_rotation_angle -= 5;
+        }
+        break;
+    case 'f':
+        if(camerax == cameraxdef && cameray == cameraydef && cameraz == camerazdef)
+        {
+            if(standing_bit == 1)
+            {
+                camerax = rect_pos.x;
+                cameray = rect_pos.y + 0.5;
+                cameraz = rect_pos.z;
+            }
+            else
+            {
+                camerax = rect_pos.x;
+                cameray = rect_pos.y  +0.25;
+                cameraz = rect_pos.z;
+            }
+            blockview = 1;
+            defview = 0;
+            camera_rotation_angle = 0;
+            targetx = 0;
+            targety = 0;
+            targetz = 0;
+        }
+        else
+        {
+            camerax = cameraxdef;
+            cameray = cameraydef;
+            cameraz = camerazdef;
+            blockview = 0;
+            defview = 1;
+            camera_rotation_angle = 90;
+            targetx = 0;
+            targety = 0;
+            targetz = 0;
+        }
+        break;
+    case 'r':
+        if(camerax == cameraxdef && cameray == cameraydef && cameraz == camerazdef)
+        {
+            camerax = 0;
+            cameray = 6;
+            cameraz = 0;
+            topview = 1;
+            defview = 0;
+            targetx = 1;
+            targety = -0.5;
+        }
+        else
+        {
+            camerax = cameraxdef;
+            cameray = cameraydef;
+            cameraz = camerazdef;
+            topview = 0;
+            defview = 1;
+            camera_rotation_angle = 90;
+            targetx = 0;
+            targety = 0;
+            targetz = 0;
+        }
+        break;
+    case 'b':
+        if(camerax == cameraxdef && cameray == cameraydef && cameraz == camerazdef)
+        {
+            camerax = rect_pos.x - 3;
+            cameray = 2;
+            cameraz = rect_pos.z;
+            targetx = rect_pos.x;
+            targetz = rect_pos.z;
+            targety = 1.7;
+            defview = 0;
+            followview = 1;
+            camera_rotation_angle = 0;
+        }
+        else
+        {
+            camerax = cameraxdef;
+            cameray = cameraydef;
+            cameraz = camerazdef;
+            followview = 0;
+            defview = 1;
+            camera_rotation_angle = 90;
+            targetx = 0;
+            targety = 0;
+            targetz = 0;
+        }
+        break;
     case 'Q':
     case 'q':
         quit(window);
@@ -313,10 +435,30 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
 void mouseButton (GLFWwindow* window, int button, int action, int mods)
 {
     switch (button) {
-    default:
-        break;
+        case GLFW_MOUSE_BUTTON_LEFT:
+            if (action == GLFW_PRESS){
+                left_mouse_clicked=1;
+                break;
+            }
+            if (action == GLFW_RELEASE){
+                left_mouse_clicked=0;
+                break;
+            }
+        case GLFW_MOUSE_BUTTON_RIGHT:
+            if (action == GLFW_PRESS){
+                right_mouse_clicked=1;
+                break;
+            }
+            if (action == GLFW_RELEASE){
+                right_mouse_clicked=0;
+                break;
+            }
+            break;
+        default:
+            break;
     }
 }
+
 
 
 /* Executed when window is resized to 'width' and 'height' */
@@ -797,22 +939,83 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     glfwGetFramebufferSize(window, &fbwidth, &fbheight);
     glViewport((int)(x*fbwidth), (int)(y*fbheight), (int)(w*fbwidth), (int)(h*fbheight));
 
+    double new_mouse_x, new_mouse_y;
+    glfwGetCursorPos(window, &new_mouse_x, &new_mouse_y);
+    if (left_mouse_clicked == 1)
+    {
+        camera_rotation_angle = (new_mouse_x * 360 / 600.0);
+        camerax = cameraxdef;
+        cameraz = cameraydef;
+    }
 
     // use the loaded shader program
     // Don't change unless you know what you are doing
     glUseProgram(programID);
 
     // Eye - Location of camera. Don't change unless you are sure!!
-    glm::vec3 eye ( /*5*cos(camera_rotation_angle*M_PI/180.0f)*/0, 3, 5/**sin(camera_rotation_angle*M_PI/180.0f)*/ );
+    //    glm::vec3 eye ( /*5*cos(camera_rotation_angle*M_PI/180.0f)*/0, 3, 5/**sin(camera_rotation_angle*M_PI/180.0f)*/ );
+    //    // Target - Where is the camera looking at.  Don't change unless you are sure!!
+    //    glm::vec3 target (0, 0, 0);
+    //    // Up - Up vector defines tilt of camera.  Don't change unless you are sure!!
+    //    glm::vec3 up (0, 1, 0);
+
+    glm::vec3 eye(camerax * cos(camera_rotation_angle * M_PI / 180.0f), cameray, cameraz * sin(camera_rotation_angle * M_PI / 180.0f));
     // Target - Where is the camera looking at.  Don't change unless you are sure!!
-    glm::vec3 target (0, 0, 0);
+    glm::vec3 target(targetx, targety, targetz);
     // Up - Up vector defines tilt of camera.  Don't change unless you are sure!!
-    glm::vec3 up (0, 1, 0);
+    glm::vec3 up(0, 1, 0);
+
 
     // Compute Camera matrix (view)
     // Matrices.view = glm::lookAt( eye, target, up ); // Rotating Camera for 3D
     //  Don't change unless you are sure!!
     Matrices.view = glm::lookAt(eye, target, up); // Fixed camera for 2D (ortho) in XY plane
+
+    if(blockview == 1)
+    {
+        if(standing_bit == 1)
+        {
+            camerax = rect_pos.x;
+            cameray = rect_pos.y + 0.5;
+            cameraz = rect_pos.z;
+        }
+        else
+        {
+            camerax = rect_pos.x;
+            cameray = rect_pos.y + 0.25;
+            cameraz = rect_pos.z;
+        }
+        targetx = 1 * cos(blockangle * M_PI / 180) + rect_pos.x;
+        targety = 0;
+        targetz = 1 * sin(blockangle * M_PI / 180) + rect_pos.z;
+    }
+    else if(defview == 1)
+    {
+        camerax = cameraxdef;
+        cameray = cameraydef;
+        cameraz = camerazdef;
+        targetx = 0;
+        targety = 0;
+        targetz = 0;
+    }
+    else if(topview == 1)
+    {
+        camerax = 0;
+        cameray = 6;
+        cameraz = 0;
+        targetx = 1;
+        targety = -0.5;
+    }
+    else if(followview == 1)
+    {
+        camerax = rect_pos.x - 3;
+        cameray = 2;
+        cameraz = rect_pos.z;
+        targetx = rect_pos.x;
+        targetz = rect_pos.z;
+        targety = 1.7;
+        camera_rotation_angle = 0;
+    }
 
     // Compute ViewProject matrix as view/camera might not be changed for this frame (basic scenario)
     //  Don't change unless you are sure!!

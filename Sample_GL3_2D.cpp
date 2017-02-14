@@ -35,16 +35,17 @@ int level_pass[10]={0}, level_number = 0, level_start[10], level_end[10], horizo
 int standing_bit = 1, move_left = 0, move_right = 0, move_up = 0, move_down = 0,sleeping_x = 0, sleeping_z = 0, move_clock = 0, move_anti = 0;
 int next_left = 90, next_right = -90, next_up = 90, next_down =-90, hor_count = 0, ver_count = 0, next_clock = 90, next_anti = -90,rot_count = 0;
 float tile_rotation = 0;
-int vis = 0;
+int vis = 0, in_animation = 0, is_falling = 0,view_number = 1, time_counter = 0,moves_counter = 0;
 vector <float> finish_tile_x ={3.0,3.6,1.8};
 vector <float> finish_tile_z ={0,0,0};
 vector <float> tile_x = {/*level 0 : 14*/0, 0, 0, -0.60, -0.60, -0.60, 0.60, 0.60, 0.60, 1.20,1.80,2.40,0,3,
                          /*level 1 : 29*/0, 0, 0, -0.60, -0.60, -0.60, 0.60, 0.60, 0.60, 1.20,1.80,2.40,0,3,0,0,0,0.6,1.2,1.8,2.4,3.0,2.4,3.0,2.4,3.0,2.4,3.0,0,
                          /*level 2 : 16*/0, 0, 0, -0.60, -0.60, -0.60, 0.60, 0.60, 0.60, 1.20,1.80,2.40,0,3,3.6,4.2};
+
 vector <float> tile_z = {/*level 0 : 14*/0, 0.60, -0.60, 0, -0.60, 0.60, 0, -0.60, 0.60, 0,0,0,0,3.6,
                          /*level 1 : 29*/0, 0.60, -0.60, 0, -0.60, 0.60, 0, -0.60, 0.60, 0,0,0,0,0,-1.2,-1.8,-2.4,-2.4,-2.4,-2.4,-2.4,-2.4,-1.8,-1.8,-1.2,-1.2,-0.6,-0.6,0,
                          /*level 2 : 16*/0, 0.60, -0.60, 0, -0.60, 0.60, 0, -0.60, 0.60, 0,0,0,0,0,0,0};
-
+string title_string;
 struct GLMatrices {
     glm::mat4 projectionO, projectionP;
     glm::mat4 model;
@@ -249,24 +250,34 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 
     if (action == GLFW_RELEASE) {
         switch (key) {
-        case GLFW_KEY_C:
-            rectangle_rot_status = !rectangle_rot_status;
-            break;
-        case GLFW_KEY_P:
-            triangle_rot_status = !triangle_rot_status;
-            break;
         case GLFW_KEY_LEFT:
+            moves_counter++;
             move_left = 1;
             //rectangle_rotation -= 90;
             break;
         case GLFW_KEY_RIGHT:
+            moves_counter++;
             move_right = 1;
             break;
         case GLFW_KEY_UP:
+            moves_counter++;
             move_up = 1;
             break;
         case GLFW_KEY_DOWN:
+            moves_counter++;
             move_down = 1;
+            break;
+        case GLFW_KEY_1:
+            view_number = 1;
+            break;
+        case GLFW_KEY_2:
+            view_number = 2;
+            break;
+        case GLFW_KEY_3:
+            view_number = 3;
+            break;
+        case GLFW_KEY_4:
+            view_number = 4;
             break;
         default:
             break;
@@ -292,39 +303,7 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
     case 'q':
         quit(window);
         break;
-        /*case ' ':
-        proj_type ^= 1;
-        break;
-    case 'a':
-        tri_pos.x -= 0.2;
-        break;
-    case 'd':
-        tri_pos.x += 0.2;
-        break;
-    case 'w':
-        tri_pos.y += 0.2;
-        break;
-    case 's':
-        tri_pos.y -= 0.2;
-        break;
-    case 'f':
-        tri_pos.z += 0.2;
-        break;
-    case 'r':
-        tri_pos.z -= 0.2;
-        break;*/
-    case 'a':
-        rect_pos.x -= 0.6;
-        break;
-    case 'd':
-        rect_pos.x += 0.6;
-        break;
-    case 'w':
-        rect_pos.z -= 0.6;
-        break;
-    case 's':
-        rect_pos.z += 0.6;
-        break;
+
     default:
         break;
     }
@@ -848,8 +827,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     //cout << level_number << endl << endl << endl;
     for(i=level_start[level_number];i<level_end[level_number];i++)
     {
-        if(abs(4-rect_pos.x)>=0.01)
-        {
+
         //cout << i << " " << level_end[level_number] << endl;
         // Load identity to model matrix
         Matrices.model = glm::mat4(1.0f);
@@ -866,8 +844,10 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
 
         // draw3DObject draws the VAO given to it using current MVP matrix
         draw3DObject(tile);
-        }
+
     }
+
+    title_string = "Level Number: ";
 
     Matrices.model = glm::mat4(1.0f);
 
@@ -908,6 +888,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     Matrices.model = glm::mat4(1.0f);
     if(move_left == 1 && horizontal_angle_moved < next_left && standing_bit == 1)
     {
+        in_animation = 1;
         if(vis == 0)
         {
             hor_count --;
@@ -918,6 +899,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         horizontal_angle_moved += 9;
         if (horizontal_angle_moved == next_left)
         {
+            in_animation = 0;
             move_left = 0;
             standing_bit = 0;
             sleeping_x = 1;
@@ -929,6 +911,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     }
     else if(move_left == 1 && horizontal_angle_moved < next_left && /*standing_bit == 0*/ sleeping_x == 1)
     {
+        in_animation = 1;
         if(vis == 0)
         {
             hor_count --;
@@ -939,6 +922,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         horizontal_angle_moved += 9;
         if (horizontal_angle_moved == next_left)
         {
+            in_animation = 0;
             move_left = 0;
             standing_bit = 1;
             next_left += 90;
@@ -950,6 +934,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     }
     else if(move_left == 1 && torsion_angle_moved > next_anti && sleeping_z ==1)
     {
+        in_animation = 1;
         if(vis==0)
         {
             vis = 1;
@@ -972,6 +957,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         }*/
         if(torsion_angle_moved == next_anti)
         {
+            in_animation = 0;
             move_left = 0;
             next_clock -=90;
             next_anti -=90;
@@ -982,6 +968,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     }
     else if(move_right == 1 && horizontal_angle_moved > next_right && standing_bit == 1)
     {
+        in_animation = 1;
         if(vis==0)
         {
             hor_count++;
@@ -992,6 +979,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         horizontal_angle_moved -= 9;
         if(horizontal_angle_moved == next_right)
         {
+            in_animation = 0;
             standing_bit = 0;
             move_right = 0;
             next_right -= 90;
@@ -1003,6 +991,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     }
     else if(move_right == 1 && horizontal_angle_moved > next_right && sleeping_x == 1)
     {
+        in_animation = 1;
         if(vis == 0)
         {
             hor_count ++;
@@ -1013,6 +1002,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         horizontal_angle_moved -= 9;
         if(horizontal_angle_moved == next_right)
         {
+            in_animation = 0;
             standing_bit = 1;
             move_right = 0;
             next_right -= 90;
@@ -1024,6 +1014,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     }
     else if(move_right == 1 && torsion_angle_moved < next_clock && sleeping_z == 1)
     {
+        in_animation = 1;
         if(vis==0)
         {
             rot_count++;
@@ -1033,6 +1024,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         torsion_angle_moved += 9;
         if(torsion_angle_moved == next_clock)
         {
+            in_animation = 0;
             move_right = 0;
             next_clock += 90;
             next_anti += 90;
@@ -1043,6 +1035,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     }
     else if(move_up == 1 && vertical_angle_moved > next_down && standing_bit == 1)
     {
+        in_animation = 1;
         rect_pos.z -=0.09;
         rect_pos.y -=0.03;
 
@@ -1052,6 +1045,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
             vertical_angle_moved +=18;
             if(vertical_angle_moved == next_up)
             {
+                in_animation = 0;
                 move_up = 0;
                 next_up += 90;
                 next_down +=90;
@@ -1063,6 +1057,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         }
         if(vertical_angle_moved == next_down)
         {
+            in_animation = 0;
             standing_bit = 0;
             sleeping_x = 0;
             sleeping_z = 1;
@@ -1073,6 +1068,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     }
     else if(move_up == 1 && vertical_angle_moved > next_down && sleeping_z == 1)
     {
+        in_animation = 1;
         rect_pos.z -= 0.09;
         rect_pos.y += 0.03;
         //cout << "LOL" << endl;
@@ -1082,6 +1078,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
             vertical_angle_moved +=18;
             if(vertical_angle_moved == next_up)
             {
+                in_animation = 0;
                 move_up = 0;
                 next_up += 90;
                 next_down +=90;
@@ -1093,6 +1090,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         }
         if(vertical_angle_moved == next_down)
         {
+            in_animation = 0;
             standing_bit = 1;
             sleeping_x = 0;
             sleeping_z = 0;
@@ -1103,10 +1101,12 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     }
     else if(move_up == 1 && torsion_angle_moved < next_clock && sleeping_x == 1)
     {
+        in_animation = 1;
         rect_pos.z -=0.06;
         torsion_angle_moved += 9;
         if(torsion_angle_moved == next_clock)
         {
+            in_animation = 0;
             move_up = 0;
             next_clock+=90;
             next_anti +=90;
@@ -1114,6 +1114,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     }
     else if(move_down ==1 && vertical_angle_moved < next_up && standing_bit == 1)
     {
+        in_animation = 1;
         rect_pos.z += 0.09;
         rect_pos.y -= 0.03;
         vertical_angle_moved +=9;
@@ -1122,6 +1123,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
             vertical_angle_moved -=18;
             if(vertical_angle_moved == next_down)
             {
+                in_animation = 0;
                 standing_bit = 0;
                 sleeping_z = 1;
                 sleeping_x = 0;
@@ -1133,6 +1135,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         }
         if(vertical_angle_moved == next_up)
         {
+            in_animation = 0;
             standing_bit = 0;
             sleeping_x = 0;
             sleeping_z = 1;
@@ -1143,6 +1146,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     }
     else if(move_down == 1 && vertical_angle_moved < next_up && sleeping_z == 1)
     {
+        in_animation = 1;
         rect_pos.z +=0.09;
         rect_pos.y +=0.03;
         vertical_angle_moved +=9;
@@ -1151,6 +1155,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
             vertical_angle_moved -=18;
             if(vertical_angle_moved == next_down)
             {
+                in_animation = 0;
                 standing_bit = 1;
                 sleeping_x = 0;
                 sleeping_z = 0;
@@ -1162,6 +1167,7 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         }
         if(vertical_angle_moved == next_up)
         {
+            in_animation = 0;
             standing_bit =1;
             sleeping_x = 0;
             sleeping_z = 1;
@@ -1172,11 +1178,13 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     }
     else if(move_down == 1 && torsion_angle_moved > next_anti && sleeping_x == 1)
     {
+        in_animation = 1;
         //cout << next_anti << endl << vertical_angle_moved << endl << next_clock << endl << "lol" << endl;
         rect_pos.z +=0.06;
         torsion_angle_moved -= 9;
         if(torsion_angle_moved == next_anti)
         {
+            in_animation = 0;
             move_down = 0;
             next_clock-=90;
             next_anti -=90;
@@ -1277,45 +1285,140 @@ void initGL (GLFWwindow* window, int width, int height)
     // cout << "GLSL: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
 }
 
+void reset()
+{
+    rect_pos.x = -0.6;
+    rect_pos.y = 0.66;
+    rect_pos.z = 0;
+    hor_count = 0;
+    ver_count = 0;
+    rot_count = 0;
+    standing_bit = 1, move_left = 0, move_right = 0, move_up = 0, move_down = 0,sleeping_x = 0, sleeping_z = 0, move_clock = 0, move_anti = 0;
+    horizontal_angle_moved = 0, vertical_angle_moved = 0, torsion_angle_moved = 0;
+    next_left = 90, next_right = -90, next_up = 90, next_down =-90, hor_count = 0, ver_count = 0, next_clock = 90, next_anti = -90,rot_count = 0;
+}
+
+void check()
+{
+    int i;
+
+    if(level_number == 2 && standing_bit == 1)
+    {
+        if (abs(rect_pos.x + 0.6) <=0.01 && abs(rect_pos.z - 0.6)<=0.01)
+        {
+            rect_pos.x= 3.6;
+            rect_pos.z = 0 ;
+        }
+    }
+    int standing_falling = 0, sleepingx_l=0, sleepingx_r = 0,sleepingz_l = 0,sleepingz_r = 0;
+    if(in_animation == 0)
+    {
+        if(standing_bit == 1)
+        {
+            for(i=level_start[level_number]; i<level_end[level_number]; i++)
+            {
+                if(abs(rect_pos.x-tile_x[i])<=0.01 && abs(rect_pos.z-tile_z[i])<=0.01)
+                {
+                    standing_falling = 1;
+                }
+            }
+            if(standing_falling == 0)
+            {
+                reset();
+            }
+        }
+        else if(sleeping_x == 1)
+        {
+            for(i=level_start[level_number]; i<level_end[level_number]; i++)
+            {
+                if(abs(rect_pos.x-tile_x[i]-0.3)<=0.01 && abs(rect_pos.z-tile_z[i])<=0.01)
+                {
+                    sleepingx_l = 1;
+                    break;
+                }
+            }
+            for(i=level_start[level_number]; i<level_end[level_number]; i++)
+            {
+                if(abs(rect_pos.x-tile_x[i]+0.3)<=0.01 && abs(rect_pos.z-tile_z[i])<=0.01)
+                {
+                    sleepingx_r = 1;
+                    break;
+                }
+            }
+            if(sleepingx_l == 0 || sleepingx_r == 0)
+            {
+                reset();
+            }
+        }
+        else if(sleeping_z == 1)
+        {
+            for(i=level_start[level_number]; i<level_end[level_number]; i++)
+            {
+                if(abs(rect_pos.x-tile_x[i])<=0.01 && abs(rect_pos.z-tile_z[i]-0.3)<=0.01)
+                {
+                    sleepingz_l = 1;
+                    break;
+                }
+            }
+            for(i=level_start[level_number]; i<level_end[level_number]; i++)
+            {
+                if(abs(rect_pos.x-tile_x[i])<=0.01 && abs(rect_pos.z-tile_z[i]+0.3)<=0.01)
+                {
+                    sleepingz_r = 1;
+                    break;
+                }
+            }
+            if(sleepingz_l == 0 || sleepingz_r == 0)
+            {
+                reset();
+            }
+        }
+    }
+
+}
+
+
+
 int main (int argc, char** argv)
 {
 
+    //music_initialise();
     //level_number= 2;
     mpg123_handle *mh;
-        unsigned char *buffer;
-        size_t buffer_size;
-        size_t done;
-        int err;
+    unsigned char *buffer;
+    size_t buffer_size;
+    size_t done;
+    int err;
 
-        int driver;
-        ao_device *dev;
+    int driver;
+    ao_device *dev;
 
-        ao_sample_format format;
-        int channels, encoding;
-        long rate;
+    ao_sample_format format;
+    int channels, encoding;
+    long rate;
 
-        // if(argc < 2)
-        //   exit(0);
+    // if(argc < 2)
+    //   exit(0);
 
-        /* initializations */
-        ao_initialize();
-        driver = ao_default_driver_id();
-        mpg123_init();
-        mh = mpg123_new(NULL, &err);
-        buffer_size = 3200;
-        buffer = (unsigned char*) malloc(buffer_size * sizeof(unsigned char));
+    /* initializations */
+    ao_initialize();
+    driver = ao_default_driver_id();
+    mpg123_init();
+    mh = mpg123_new(NULL, &err);
+    buffer_size = 3200;
+    buffer = (unsigned char*) malloc(buffer_size * sizeof(unsigned char));
 
-        /* open the file and get the decoding format */
-        mpg123_open(mh, "q.mp3");
-        mpg123_getformat(mh, &rate, &channels, &encoding);
+    /* open the file and get the decoding format */
+    mpg123_open(mh, "q.mp3");
+    mpg123_getformat(mh, &rate, &channels, &encoding);
 
-        /* set the output format and open the output device */
-        format.bits = mpg123_encsize(encoding) * BITS;
-        format.rate = rate;
-        format.channels = channels;
-        format.byte_format = AO_FMT_NATIVE;
-        format.matrix = 0;
-        dev = ao_open_live(driver, &format, NULL);
+    /* set the output format and open the output device */
+    format.bits = mpg123_encsize(encoding) * BITS;
+    format.rate = rate;
+    format.channels = channels;
+    format.byte_format = AO_FMT_NATIVE;
+    format.matrix = 0;
+    dev = ao_open_live(driver, &format, NULL);
 
     int width = 600;
     int height = 600;
@@ -1328,6 +1431,8 @@ int main (int argc, char** argv)
     level_end[1] =43;
     level_start[2] = 43;
     level_end[2] = 58;
+    level_start[3] = 58;
+    level_end[3] = 85;
 
 
 
@@ -1339,7 +1444,12 @@ int main (int argc, char** argv)
 
     /* Draw in loop */
     while (!glfwWindowShouldClose(window)) {
-
+        string str1 = to_string(level_number + 1);
+        string str2 = to_string(time_counter);
+        string str3 = to_string(moves_counter);
+        title_string = "Level Number: " + str1 + " TIME: " + str2 + " Moves: " + str3;
+        const char *feeder = title_string.c_str();
+        glfwSetWindowTitle(window, feeder);
         // clear the color and depth in the frame buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -1356,22 +1466,12 @@ int main (int argc, char** argv)
         if(standing_bit==1 && fabs(rect_pos.x - finish_tile_x[level_number])<=0.001 && fabs(rect_pos.z - finish_tile_z[level_number])<=0.001)
         {
             level_number++;
-            rect_pos.x = -0.6;
-            rect_pos.y = 0.66;
-            rect_pos.z = 0;
-            hor_count = 0;
-            ver_count = 0;
-            rot_count = 0;
+            reset();
         }
         int i;
-        if(level_number == 2 && standing_bit == 1)
-        {
-            if (abs(rect_pos.x + 0.6) <=0.01 && abs(rect_pos.z - 0.6)<=0.01)
-            {
-                rect_pos.x= 3.6;
-                rect_pos.z = 0 ;
-            }
-        }
+
+        check();
+
 
         // Swap Frame Buffer in double buffering
         glfwSwapBuffers(window);
@@ -1381,8 +1481,9 @@ int main (int argc, char** argv)
 
         // Control based on time (Time based transformation like 5 degrees rotation every 0.5s)
         current_time = glfwGetTime(); // Time in seconds
-        if ((current_time - last_update_time) >= 0.5) { // atleast 0.5s elapsed since last frame
+        if ((current_time - last_update_time) >= 1.0) { // atleast 0.5s elapsed since last frame
             // do something every 0.5 seconds ..
+            time_counter +=1;
             last_update_time = current_time;
         }
     }

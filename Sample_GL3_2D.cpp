@@ -37,19 +37,23 @@ int next_left = 90, next_right = -90, next_up = 90, next_down =-90, hor_count = 
 float tile_rotation = 0;
 float cameraxdef = 5, cameraydef = 4, camerazdef = 5, camerax = cameraxdef, cameray = cameraydef, cameraz = camerazdef;
 float targetx = 0, targety = 0, targetz = 0;
-int vis = 0, blockview = 0, defview = 1, topview = 0, blockangle = 90, followview = 0;
+int vis = 0, blockview = 0, defview = 1, topview = 0, blockangle = 90, followview = 0, is_bridge_on = 0;
 float camera_zoom = 0.2;
 float camera_rotation_angle = 90;
-int in_animation = 0, is_falling = 0,view_number = 1, time_counter = 0,moves_counter = 0;
-vector <float> finish_tile_x ={3.0,3.6,1.8};
-vector <float> finish_tile_z ={0,0,0};
+int in_animation = 0, is_falling = 0,view_number = 1, time_counter = 0,moves_counter = 0, background_rotation = 0;
+vector <float> finish_tile_x ={3.0,3.6,1.8,4.2,3.6};
+vector <float> finish_tile_z ={0,0,0,0,-1.8};
 vector <float> tile_x = {/*level 0 : 14*/0, 0, 0, -0.60, -0.60, -0.60, 0.60, 0.60, 0.60, 1.20,1.80,2.40,0,3,
                          /*level 1 : 29*/0, 0, 0, -0.60, -0.60, -0.60, 0.60, 0.60, 0.60, 1.20,1.80,2.40,0,3,0,0,0,0.6,1.2,1.8,2.4,3.0,2.4,3.0,2.4,3.0,2.4,3.0,0,
-                         /*level 2 : 16*/0, 0, 0, -0.60, -0.60, -0.60, 0.60, 0.60, 0.60, 1.20,1.80,2.40,0,3,3.6,4.2};
+                         /*level 2 : 16*/0, 0, 0, -0.60, -0.60, -0.60, 0.60, 0.60, 0.60, 1.20,1.80,2.40,0,3,3.6,4.2,
+                         /*level 3 : 16*/0, 0, 0, -0.60, -0.60, -0.60, 0.60, 0.60, 0.60, 1.20,1.80,2.40,0,3,3.6,4.2,
+                         /*level 4 : 50*/0, 0, 0, -0.60, -0.60, -0.60, 0.60, 0.60, 0.60, 1.20,1.80,2.40,0,3,0,0,0,0.6,2.4,3.0,2.4,3.0,/*2.4,3.02.4,3.0,*/0,3.6,4.2,1.2,1.8,};
 
 vector <float> tile_z = {/*level 0 : 14*/0, 0.60, -0.60, 0, -0.60, 0.60, 0, -0.60, 0.60, 0,0,0,0,3.6,
                          /*level 1 : 29*/0, 0.60, -0.60, 0, -0.60, 0.60, 0, -0.60, 0.60, 0,0,0,0,0,-1.2,-1.8,-2.4,-2.4,-2.4,-2.4,-2.4,-2.4,-1.8,-1.8,-1.2,-1.2,-0.6,-0.6,0,
-                         /*level 2 : 16*/0, 0.60, -0.60, 0, -0.60, 0.60, 0, -0.60, 0.60, 0,0,0,0,0,0,0};
+                         /*level 2 : 16*/0, 0.60, -0.60, 0, -0.60, 0.60, 0, -0.60, 0.60, 0,0,0,0,0,0,0,
+                         /*level 3 : 16*/0, 0.60, -0.60, 0, -0.60, 0.60, 0, -0.60, 0.60, 0,0,0,0,0,0,0,
+                         /*level 4 : 50*/0, 0.60, -0.60, 0, -0.60, 0.60, 0, -0.60, 0.60, 0,0,0,0,0,-1.2,-1.8,-2.4,-2.4,-2.4,/**/-2.4,-1.8,-1.8,/*-1.2,-1.2,-0.6,-0.6,*/0,0,0,-2.4,-2.4,};
 string title_string;
 struct GLMatrices {
     glm::mat4 projectionO, projectionP;
@@ -341,15 +345,15 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
         {
             if(standing_bit == 1)
             {
-                camerax = rect_pos.x;
-                cameray = rect_pos.y + 0.5;
-                cameraz = rect_pos.z;
+                camerax = rect_pos.x + 0.3;
+                cameray = rect_pos.y + 0.6;
+                cameraz = rect_pos.z ;
             }
             else
             {
-                camerax = rect_pos.x;
-                cameray = rect_pos.y  +0.25;
-                cameraz = rect_pos.z;
+                camerax = rect_pos.x + 0.3;
+                cameray = rect_pos.y  +0.30;
+                cameraz = rect_pos.z  ;
             }
             blockview = 1;
             defview = 0;
@@ -399,7 +403,7 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
         if(camerax == cameraxdef && cameray == cameraydef && cameraz == camerazdef)
         {
             camerax = rect_pos.x - 3;
-            cameray = 2;
+            cameray = 5;
             cameraz = rect_pos.z;
             targetx = rect_pos.x;
             targetz = rect_pos.z;
@@ -435,27 +439,27 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
 void mouseButton (GLFWwindow* window, int button, int action, int mods)
 {
     switch (button) {
-        case GLFW_MOUSE_BUTTON_LEFT:
-            if (action == GLFW_PRESS){
-                left_mouse_clicked=1;
-                break;
-            }
-            if (action == GLFW_RELEASE){
-                left_mouse_clicked=0;
-                break;
-            }
-        case GLFW_MOUSE_BUTTON_RIGHT:
-            if (action == GLFW_PRESS){
-                right_mouse_clicked=1;
-                break;
-            }
-            if (action == GLFW_RELEASE){
-                right_mouse_clicked=0;
-                break;
-            }
+    case GLFW_MOUSE_BUTTON_LEFT:
+        if (action == GLFW_PRESS){
+            left_mouse_clicked=1;
             break;
-        default:
+        }
+        if (action == GLFW_RELEASE){
+            left_mouse_clicked=0;
             break;
+        }
+    case GLFW_MOUSE_BUTTON_RIGHT:
+        if (action == GLFW_PRESS){
+            right_mouse_clicked=1;
+            break;
+        }
+        if (action == GLFW_RELEASE){
+            right_mouse_clicked=0;
+            break;
+        }
+        break;
+    default:
+        break;
     }
 }
 
@@ -481,7 +485,7 @@ void reshapeWindow (GLFWwindow* window, int width, int height)
     Matrices.projectionO = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, 0.1f, 500.0f);
 }
 
-VAO *tile, *rectangle, *finish_tile, *bridge_tile, *teleport_tile;
+VAO *tile, *rectangle, *finish_tile, *bridge_tile, *teleport_tile, *background_tile;
 
 // Creates the triangle object used in this sample code
 void createTile ()
@@ -593,6 +597,134 @@ void createTile ()
 
     // create3DObject creates and returns a handle to a VAO that can be used later
     tile = create3DObject(GL_TRIANGLES, 36, vertex_buffer_data, color_buffer_data, GL_FILL);
+}
+
+void createBackgroundTile ()
+{
+    /* ONLY vertices between the bounds specified in glm::ortho will be visible on screen */
+
+    /* Define vertex array as used in glBegin (GL_TRIANGLES) */
+    static const GLfloat vertex_buffer_data [] = {
+        -300,-300,-300, // triangle 1 : begin
+                -300,-300, 300,
+                -300, 300, 300, // triangle 1 : end
+
+                300, 300,-300, // triangle 2 : begin
+                -300,-300,-300,
+                -300, 300,-300, // triangle 2 : end
+
+                300,-300, 300,
+                -300,-300,-300,
+                300,-300,-300,
+
+                300, 300,-300,
+                300,-300,-300,
+                -300,-300,-300,
+
+                -300,-300,-300,
+                -300, 300, 300,
+                -300, 300,-300,
+
+                300,-300, 300,
+                -300,-300, 300,
+                -300,-300,-300,
+
+                -300, 300, 300,
+                -300,-300, 300,
+                300,-300, 300,
+
+                300, 300, 300,
+                300,-300,-300,
+                300, 300,-300,
+
+                300,-300,-300,
+                300, 300, 300,
+                300,-300, 300,
+
+                300, 300, 300,
+                300, 300,-300,
+                -300, 300,-300,
+
+                300, 300, 300,
+                -300, 300,-300,
+                -300, 300, 300,
+
+                300, 300, 300,
+                -300, 300, 300,
+                300,-300, 300
+    };
+
+    static const GLfloat color_buffer_data [] = {
+
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+        1,0,0, // color 0
+        0,1,0, // color 1
+        0,0,1, // color 2
+
+    };
+
+    // create3DObject creates and returns a handle to a VAO that can be used later
+    background_tile = create3DObject(GL_TRIANGLES, 36, vertex_buffer_data, color_buffer_data, GL_FILL);
 }
 
 void createFinishTile ()
@@ -947,42 +1079,18 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         camerax = cameraxdef;
         cameraz = cameraydef;
     }
-
-    // use the loaded shader program
-    // Don't change unless you know what you are doing
-    glUseProgram(programID);
-
-    // Eye - Location of camera. Don't change unless you are sure!!
-    //    glm::vec3 eye ( /*5*cos(camera_rotation_angle*M_PI/180.0f)*/0, 3, 5/**sin(camera_rotation_angle*M_PI/180.0f)*/ );
-    //    // Target - Where is the camera looking at.  Don't change unless you are sure!!
-    //    glm::vec3 target (0, 0, 0);
-    //    // Up - Up vector defines tilt of camera.  Don't change unless you are sure!!
-    //    glm::vec3 up (0, 1, 0);
-
-    glm::vec3 eye(camerax * cos(camera_rotation_angle * M_PI / 180.0f), cameray, cameraz * sin(camera_rotation_angle * M_PI / 180.0f));
-    // Target - Where is the camera looking at.  Don't change unless you are sure!!
-    glm::vec3 target(targetx, targety, targetz);
-    // Up - Up vector defines tilt of camera.  Don't change unless you are sure!!
-    glm::vec3 up(0, 1, 0);
-
-
-    // Compute Camera matrix (view)
-    // Matrices.view = glm::lookAt( eye, target, up ); // Rotating Camera for 3D
-    //  Don't change unless you are sure!!
-    Matrices.view = glm::lookAt(eye, target, up); // Fixed camera for 2D (ortho) in XY plane
-
     if(blockview == 1)
     {
         if(standing_bit == 1)
         {
-            camerax = rect_pos.x;
-            cameray = rect_pos.y + 0.5;
+            camerax = rect_pos.x + 0.3;
+            cameray = rect_pos.y + 0.6;
             cameraz = rect_pos.z;
         }
-        else
+        else if(sleeping_x == 1 || sleeping_z == 1)
         {
             camerax = rect_pos.x;
-            cameray = rect_pos.y + 0.25;
+            cameray = rect_pos.y + 0.6;
             cameraz = rect_pos.z;
         }
         targetx = 1 * cos(blockangle * M_PI / 180) + rect_pos.x;
@@ -1017,6 +1125,31 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
         camera_rotation_angle = 0;
     }
 
+
+    // use the loaded shader program
+    // Don't change unless you know what you are doing
+    glUseProgram(programID);
+
+    // Eye - Location of camera. Don't change unless you are sure!!
+    //    glm::vec3 eye ( /*5*cos(camera_rotation_angle*M_PI/180.0f)*/0, 3, 5/**sin(camera_rotation_angle*M_PI/180.0f)*/ );
+    //    // Target - Where is the camera looking at.  Don't change unless you are sure!!
+    //    glm::vec3 target (0, 0, 0);
+    //    // Up - Up vector defines tilt of camera.  Don't change unless you are sure!!
+    //    glm::vec3 up (0, 1, 0);
+
+    glm::vec3 eye(camerax * cos(camera_rotation_angle * M_PI / 180.0f), cameray, cameraz * sin(camera_rotation_angle * M_PI / 180.0f));
+    // Target - Where is the camera looking at.  Don't change unless you are sure!!
+    glm::vec3 target(targetx, targety, targetz);
+    // Up - Up vector defines tilt of camera.  Don't change unless you are sure!!
+    glm::vec3 up(0, 1, 0);
+
+
+    // Compute Camera matrix (view)
+    // Matrices.view = glm::lookAt( eye, target, up ); // Rotating Camera for 3D
+    //  Don't change unless you are sure!!
+    Matrices.view = glm::lookAt(eye, target, up); // Fixed camera for 2D (ortho) in XY plane
+
+
     // Compute ViewProject matrix as view/camera might not be changed for this frame (basic scenario)
     //  Don't change unless you are sure!!
     glm::mat4 VP = (proj_type?Matrices.projectionP:Matrices.projectionO) * Matrices.view;
@@ -1026,126 +1159,216 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
     //  Don't change unless you are sure!!
     glm::mat4 MVP;	// MVP = Projection * View * Model
 
-    int i;
-    //cout << level_number << endl << endl << endl;
-    for(i=level_start[level_number];i<level_end[level_number];i++)
+    if(level_number == 5)
     {
-
-        //cout << i << " " << level_end[level_number] << endl;
-        // Load identity to model matrix
         Matrices.model = glm::mat4(1.0f);
 
         /* Render your scene */
-        glm::mat4 translateTile = glm::translate (glm::vec3(tile_x[i],0,tile_z[i])); // glTranslatef
-        glm::mat4 rotateTile = glm::rotate((float)(tile_rotation*M_PI/180.0f), glm::vec3(0,0,1));  // rotate about vector (1,0,0)
-        glm::mat4 tileTransform = translateTile * rotateTile;
-        Matrices.model *= tileTransform;
+        glm::mat4 translate2Tile = glm::translate (glm::vec3(0,0,0)); // glTranslatef
+        glm::mat4 rotate2Tile = glm::rotate((float)(background_rotation*M_PI/180.0f), glm::vec3(0,0,1));  // rotate about vector (1,0,0)
+        glm::mat4 tile2Transform = translate2Tile * rotate2Tile;
+        Matrices.model *= tile2Transform;
         MVP = VP * Matrices.model; // MVP = p * V * M
 
         //  Don't change unless you are sure!!
         glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
         // draw3DObject draws the VAO given to it using current MVP matrix
-        draw3DObject(tile);
+        draw3DObject(background_tile);
 
     }
 
-    title_string = "Level Number: ";
-
-    Matrices.model = glm::mat4(1.0f);
-
-    /* Render your scene */
-    glm::mat4 translateFinishTile = glm::translate (glm::vec3(finish_tile_x[level_number],0,finish_tile_z[level_number])); // glTranslatef
-    glm::mat4 rotateFinishTile = glm::rotate((float)(0*M_PI/180.0f), glm::vec3(0,0,1));  // rotate about vector (1,0,0)
-    glm::mat4 finishTileTransform = translateFinishTile * rotateFinishTile;
-    Matrices.model *= finishTileTransform;
-    MVP = VP * Matrices.model; // MVP = p * V * M
-
-    //  Don't change unless you are sure!!
-    glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-
-    // draw3DObject draws the VAO given to it using current MVP matrix
-    draw3DObject(finish_tile);
-
-    if(level_number == 2)
+    if(level_number!=5)
     {
-        //cout << "NOOOO" << endl;
+        int i;
+        //cout << level_number << endl << endl << endl;
+        for(i=level_start[level_number];i<level_end[level_number];i++)
+        {
+
+            //cout << i << " " << level_end[level_number] << endl;
+            // Load identity to model matrix
+            Matrices.model = glm::mat4(1.0f);
+
+            /* Render your scene */
+            glm::mat4 translateTile = glm::translate (glm::vec3(tile_x[i],0,tile_z[i])); // glTranslatef
+            glm::mat4 rotateTile = glm::rotate((float)(tile_rotation*M_PI/180.0f), glm::vec3(0,0,1));  // rotate about vector (1,0,0)
+            glm::mat4 tileTransform = translateTile * rotateTile;
+            Matrices.model *= tileTransform;
+            MVP = VP * Matrices.model; // MVP = p * V * M
+
+            //  Don't change unless you are sure!!
+            glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+            // draw3DObject draws the VAO given to it using current MVP matrix
+            draw3DObject(tile);
+
+        }
+
+        title_string = "Level Number: ";
+
         Matrices.model = glm::mat4(1.0f);
 
         /* Render your scene */
-        glm::mat4 translateTeleportTile = glm::translate (glm::vec3(-0.6,0,0.6)); // glTranslatef
-        glm::mat4 rotateTeleportTile = glm::rotate((float)(0*M_PI/180.0f), glm::vec3(0,0,1));  // rotate about vector (1,0,0)
-        glm::mat4 teleportTileTransform = translateTeleportTile * rotateTeleportTile;
-        Matrices.model *= teleportTileTransform;
+        glm::mat4 translateFinishTile = glm::translate (glm::vec3(finish_tile_x[level_number],0,finish_tile_z[level_number])); // glTranslatef
+        glm::mat4 rotateFinishTile = glm::rotate((float)(0*M_PI/180.0f), glm::vec3(0,0,1));  // rotate about vector (1,0,0)
+        glm::mat4 finishTileTransform = translateFinishTile * rotateFinishTile;
+        Matrices.model *= finishTileTransform;
         MVP = VP * Matrices.model; // MVP = p * V * M
 
         //  Don't change unless you are sure!!
         glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
         // draw3DObject draws the VAO given to it using current MVP matrix
-        draw3DObject(teleport_tile);
-    }
+        draw3DObject(finish_tile);
 
-    // Pop matrix to undo transformations till last push matrix instead of recomputing model matrix
-    // glPopMatrix ();
-    Matrices.model = glm::mat4(1.0f);
-    if(move_left == 1 && horizontal_angle_moved < next_left && standing_bit == 1)
-    {
-        in_animation = 1;
-        if(vis == 0)
+        if(level_number == 2)
         {
-            hor_count --;
-            vis = 1;
+            //cout << "NOOOO" << endl;
+            Matrices.model = glm::mat4(1.0f);
+
+            /* Render your scene */
+            glm::mat4 translateTeleportTile = glm::translate (glm::vec3(-0.6,0,0.6)); // glTranslatef
+            glm::mat4 rotateTeleportTile = glm::rotate((float)(0*M_PI/180.0f), glm::vec3(0,0,1));  // rotate about vector (1,0,0)
+            glm::mat4 teleportTileTransform = translateTeleportTile * rotateTeleportTile;
+            Matrices.model *= teleportTileTransform;
+            MVP = VP * Matrices.model; // MVP = p * V * M
+
+            //  Don't change unless you are sure!!
+            glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+            // draw3DObject draws the VAO given to it using current MVP matrix
+            draw3DObject(teleport_tile);
         }
-        rect_pos.y -= 0.03;
-        rect_pos.x -=0.09;
-        horizontal_angle_moved += 9;
-        if (horizontal_angle_moved == next_left)
+
+        if(level_number == 3)
         {
-            in_animation = 0;
-            move_left = 0;
-            standing_bit = 0;
-            sleeping_x = 1;
-            sleeping_z = 0;
-            next_left += 90;
-            next_right += 90;
-            vis = 0;
+            //cout << "NOOOO" << endl;
+            Matrices.model = glm::mat4(1.0f);
+
+            /* Render your scene */
+            glm::mat4 translateTeleportTile = glm::translate (glm::vec3(-0.6,0,-0.6)); // glTranslatef
+            glm::mat4 rotateTeleportTile = glm::rotate((float)(0*M_PI/180.0f), glm::vec3(0,0,1));  // rotate about vector (1,0,0)
+            glm::mat4 teleportTileTransform = translateTeleportTile * rotateTeleportTile;
+            Matrices.model *= teleportTileTransform;
+            MVP = VP * Matrices.model; // MVP = p * V * M
+
+            //  Don't change unless you are sure!!
+            glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+            // draw3DObject draws the VAO given to it using current MVP matrix
+            draw3DObject(teleport_tile);
         }
-    }
-    else if(move_left == 1 && horizontal_angle_moved < next_left && /*standing_bit == 0*/ sleeping_x == 1)
-    {
-        in_animation = 1;
-        if(vis == 0)
+
+        if(level_number == 4)
         {
-            hor_count --;
-            vis = 1;
+            //cout << "NOOOO" << endl;
+            Matrices.model = glm::mat4(1.0f);
+
+            /* Render your scene */
+            glm::mat4 translateTeleportTile = glm::translate (glm::vec3(4.2,0,0)); // glTranslatef
+            glm::mat4 rotateTeleportTile = glm::rotate((float)(0*M_PI/180.0f), glm::vec3(0,0,1));  // rotate about vector (1,0,0)
+            glm::mat4 teleportTileTransform = translateTeleportTile * rotateTeleportTile;
+            Matrices.model *= teleportTileTransform;
+            MVP = VP * Matrices.model; // MVP = p * V * M
+
+            //  Don't change unless you are sure!!
+            glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+            // draw3DObject draws the VAO given to it using current MVP matrix
+            draw3DObject(teleport_tile);
         }
-        rect_pos.y += 0.03;
-        rect_pos.x -=0.09;
-        horizontal_angle_moved += 9;
-        if (horizontal_angle_moved == next_left)
+        if(is_bridge_on == 1)
         {
-            in_animation = 0;
-            move_left = 0;
-            standing_bit = 1;
-            next_left += 90;
-            next_right +=90;
-            sleeping_x = 0;
-            sleeping_z = 0;
-            vis = 0;
+            Matrices.model = glm::mat4(1.0f);
+
+            /* Render your scene */
+            glm::mat4 translateTeleportTile = glm::translate (glm::vec3(1.2,0,-2.4)); // glTranslatef
+            glm::mat4 rotateTeleportTile = glm::rotate((float)(0*M_PI/180.0f), glm::vec3(0,0,1));  // rotate about vector (1,0,0)
+            glm::mat4 teleportTileTransform = translateTeleportTile * rotateTeleportTile;
+            Matrices.model *= teleportTileTransform;
+            MVP = VP * Matrices.model; // MVP = p * V * M
+
+            //  Don't change unless you are sure!!
+            glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+            // draw3DObject draws the VAO given to it using current MVP matrix
+            draw3DObject(tile);
+
+            Matrices.model = glm::mat4(1.0f);
+
+            /* Render your scene */
+            glm::mat4 translate1TeleportTile = glm::translate (glm::vec3(1.8,0,-2.4)); // glTranslatef
+            glm::mat4 rotate1TeleportTile = glm::rotate((float)(0*M_PI/180.0f), glm::vec3(0,0,1));  // rotate about vector (1,0,0)
+            glm::mat4 teleport1TileTransform = translate1TeleportTile * rotate1TeleportTile;
+            Matrices.model *= teleport1TileTransform;
+            MVP = VP * Matrices.model; // MVP = p * V * M
+
+            //  Don't change unless you are sure!!
+            glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+            // draw3DObject draws the VAO given to it using current MVP matrix
+            draw3DObject(tile);
         }
-    }
-    else if(move_left == 1 && torsion_angle_moved > next_anti && sleeping_z ==1)
-    {
-        in_animation = 1;
-        if(vis==0)
+        // Pop matrix to undo transformations till last push matrix instead of recomputing model matrix
+        // glPopMatrix ();
+        Matrices.model = glm::mat4(1.0f);
+        if(move_left == 1 && horizontal_angle_moved < next_left && standing_bit == 1)
         {
-            vis = 1;
-            rot_count--;
+            in_animation = 1;
+            if(vis == 0)
+            {
+                hor_count --;
+                vis = 1;
+            }
+            rect_pos.y -= 0.03;
+            rect_pos.x -=0.09;
+            horizontal_angle_moved += 9;
+            if (horizontal_angle_moved == next_left)
+            {
+                in_animation = 0;
+                move_left = 0;
+                standing_bit = 0;
+                sleeping_x = 1;
+                sleeping_z = 0;
+                next_left += 90;
+                next_right += 90;
+                vis = 0;
+            }
         }
-        rect_pos.x -=0.06;
-        torsion_angle_moved -= 9;
-        /*if(abs(rot_count)%4==2)
+        else if(move_left == 1 && horizontal_angle_moved < next_left && /*standing_bit == 0*/ sleeping_x == 1)
+        {
+            in_animation = 1;
+            if(vis == 0)
+            {
+                hor_count --;
+                vis = 1;
+            }
+            rect_pos.y += 0.03;
+            rect_pos.x -=0.09;
+            horizontal_angle_moved += 9;
+            if (horizontal_angle_moved == next_left)
+            {
+                in_animation = 0;
+                move_left = 0;
+                standing_bit = 1;
+                next_left += 90;
+                next_right +=90;
+                sleeping_x = 0;
+                sleeping_z = 0;
+                vis = 0;
+            }
+        }
+        else if(move_left == 1 && torsion_angle_moved > next_anti && sleeping_z ==1)
+        {
+            in_animation = 1;
+            if(vis==0)
+            {
+                vis = 1;
+                rot_count--;
+            }
+            rect_pos.x -=0.06;
+            torsion_angle_moved -= 9;
+            /*if(abs(rot_count)%4==2)
         {
             torsion_angle_moved +=18;
             if(torsion_angle_moved == next_clock)
@@ -1158,260 +1381,256 @@ void draw (GLFWwindow* window, float x, float y, float w, float h)
                 sleeping_z = 1;
             }
         }*/
-        if(torsion_angle_moved == next_anti)
-        {
-            in_animation = 0;
-            move_left = 0;
-            next_clock -=90;
-            next_anti -=90;
-            sleeping_x = 0;
-            standing_bit = 0;
-            vis = 0;
-        }
-    }
-    else if(move_right == 1 && horizontal_angle_moved > next_right && standing_bit == 1)
-    {
-        in_animation = 1;
-        if(vis==0)
-        {
-            hor_count++;
-            vis =1;
-        }
-        rect_pos.y -= 0.03;
-        rect_pos.x += 0.09;
-        horizontal_angle_moved -= 9;
-        if(horizontal_angle_moved == next_right)
-        {
-            in_animation = 0;
-            standing_bit = 0;
-            move_right = 0;
-            next_right -= 90;
-            next_left -= 90;
-            sleeping_x = 1;
-            sleeping_z = 0;
-            vis = 0;
-        }
-    }
-    else if(move_right == 1 && horizontal_angle_moved > next_right && sleeping_x == 1)
-    {
-        in_animation = 1;
-        if(vis == 0)
-        {
-            hor_count ++;
-            vis = 1;
-        }
-        rect_pos.y += 0.03;
-        rect_pos.x += 0.09;
-        horizontal_angle_moved -= 9;
-        if(horizontal_angle_moved == next_right)
-        {
-            in_animation = 0;
-            standing_bit = 1;
-            move_right = 0;
-            next_right -= 90;
-            next_left -= 90;
-            sleeping_x = 0;
-            sleeping_z = 0;
-            vis = 0;
-        }
-    }
-    else if(move_right == 1 && torsion_angle_moved < next_clock && sleeping_z == 1)
-    {
-        in_animation = 1;
-        if(vis==0)
-        {
-            rot_count++;
-            vis = 1;
-        }
-        rect_pos.x +=0.06;
-        torsion_angle_moved += 9;
-        if(torsion_angle_moved == next_clock)
-        {
-            in_animation = 0;
-            move_right = 0;
-            next_clock += 90;
-            next_anti += 90;
-            sleeping_x = 0;
-            standing_bit = 0;
-            vis = 0;
-        }
-    }
-    else if(move_up == 1 && vertical_angle_moved > next_down && standing_bit == 1)
-    {
-        in_animation = 1;
-        rect_pos.z -=0.09;
-        rect_pos.y -=0.03;
-
-        vertical_angle_moved -= 9;
-        if(abs(hor_count)%4==2)
-        {
-            vertical_angle_moved +=18;
-            if(vertical_angle_moved == next_up)
+            if(torsion_angle_moved == next_anti)
             {
                 in_animation = 0;
-                move_up = 0;
-                next_up += 90;
-                next_down +=90;
-                standing_bit = 0;
+                move_left = 0;
+                next_clock -=90;
+                next_anti -=90;
                 sleeping_x = 0;
-                sleeping_z = 1;
+                standing_bit = 0;
                 vis = 0;
             }
         }
-        if(vertical_angle_moved == next_down)
+        else if(move_right == 1 && horizontal_angle_moved > next_right && standing_bit == 1)
         {
-            in_animation = 0;
-            standing_bit = 0;
-            sleeping_x = 0;
-            sleeping_z = 1;
-            move_up = 0;
-            next_up -=90;
-            next_down -=90;
-        }
-    }
-    else if(move_up == 1 && vertical_angle_moved > next_down && sleeping_z == 1)
-    {
-        in_animation = 1;
-        rect_pos.z -= 0.09;
-        rect_pos.y += 0.03;
-        //cout << "LOL" << endl;
-        vertical_angle_moved -=9;
-        if(abs(hor_count)%4==2)
-        {
-            vertical_angle_moved +=18;
-            if(vertical_angle_moved == next_up)
+            in_animation = 1;
+            if(vis==0)
+            {
+                hor_count++;
+                vis =1;
+            }
+            rect_pos.y -= 0.03;
+            rect_pos.x += 0.09;
+            horizontal_angle_moved -= 9;
+            if(horizontal_angle_moved == next_right)
             {
                 in_animation = 0;
-                move_up = 0;
-                next_up += 90;
-                next_down +=90;
+                standing_bit = 0;
+                move_right = 0;
+                next_right -= 90;
+                next_left -= 90;
+                sleeping_x = 1;
+                sleeping_z = 0;
+                vis = 0;
+            }
+        }
+        else if(move_right == 1 && horizontal_angle_moved > next_right && sleeping_x == 1)
+        {
+            in_animation = 1;
+            if(vis == 0)
+            {
+                hor_count ++;
+                vis = 1;
+            }
+            rect_pos.y += 0.03;
+            rect_pos.x += 0.09;
+            horizontal_angle_moved -= 9;
+            if(horizontal_angle_moved == next_right)
+            {
+                in_animation = 0;
                 standing_bit = 1;
+                move_right = 0;
+                next_right -= 90;
+                next_left -= 90;
                 sleeping_x = 0;
                 sleeping_z = 0;
                 vis = 0;
             }
         }
-        if(vertical_angle_moved == next_down)
+        else if(move_right == 1 && torsion_angle_moved < next_clock && sleeping_z == 1)
         {
-            in_animation = 0;
-            standing_bit = 1;
-            sleeping_x = 0;
-            sleeping_z = 0;
-            move_up = 0;
-            next_up -=90;
-            next_down -=90;
+            in_animation = 1;
+            if(vis==0)
+            {
+                rot_count++;
+                vis = 1;
+            }
+            rect_pos.x +=0.06;
+            torsion_angle_moved += 9;
+            if(torsion_angle_moved == next_clock)
+            {
+                in_animation = 0;
+                move_right = 0;
+                next_clock += 90;
+                next_anti += 90;
+                sleeping_x = 0;
+                standing_bit = 0;
+                vis = 0;
+            }
         }
-    }
-    else if(move_up == 1 && torsion_angle_moved < next_clock && sleeping_x == 1)
-    {
-        in_animation = 1;
-        rect_pos.z -=0.06;
-        torsion_angle_moved += 9;
-        if(torsion_angle_moved == next_clock)
+        else if(move_up == 1 && vertical_angle_moved > next_down && standing_bit == 1)
         {
-            in_animation = 0;
-            move_up = 0;
-            next_clock+=90;
-            next_anti +=90;
-        }
-    }
-    else if(move_down ==1 && vertical_angle_moved < next_up && standing_bit == 1)
-    {
-        in_animation = 1;
-        rect_pos.z += 0.09;
-        rect_pos.y -= 0.03;
-        vertical_angle_moved +=9;
-        if(abs(hor_count)%4==2)
-        {
-            vertical_angle_moved -=18;
+            in_animation = 1;
+            rect_pos.z -=0.09;
+            rect_pos.y -=0.03;
+
+            vertical_angle_moved -= 9;
+            if(abs(hor_count)%4==2)
+            {
+                vertical_angle_moved +=18;
+                if(vertical_angle_moved == next_up)
+                {
+                    in_animation = 0;
+                    move_up = 0;
+                    next_up += 90;
+                    next_down +=90;
+                    standing_bit = 0;
+                    sleeping_x = 0;
+                    sleeping_z = 1;
+                    vis = 0;
+                }
+            }
             if(vertical_angle_moved == next_down)
             {
                 in_animation = 0;
                 standing_bit = 0;
-                sleeping_z = 1;
                 sleeping_x = 0;
-                move_down = 0;
-                next_up-=90;
+                sleeping_z = 1;
+                move_up = 0;
+                next_up -=90;
                 next_down -=90;
-                vis = 0;
             }
         }
-        if(vertical_angle_moved == next_up)
+        else if(move_up == 1 && vertical_angle_moved > next_down && sleeping_z == 1)
         {
-            in_animation = 0;
-            standing_bit = 0;
-            sleeping_x = 0;
-            sleeping_z = 1;
-            move_down = 0;
-            next_up +=90;
-            next_down +=90;
-        }
-    }
-    else if(move_down == 1 && vertical_angle_moved < next_up && sleeping_z == 1)
-    {
-        in_animation = 1;
-        rect_pos.z +=0.09;
-        rect_pos.y +=0.03;
-        vertical_angle_moved +=9;
-        if(abs(hor_count)%4==2)
-        {
-            vertical_angle_moved -=18;
+            in_animation = 1;
+            rect_pos.z -= 0.09;
+            rect_pos.y += 0.03;
+            //cout << "LOL" << endl;
+            vertical_angle_moved -=9;
+            if(abs(hor_count)%4==2)
+            {
+                vertical_angle_moved +=18;
+                if(vertical_angle_moved == next_up)
+                {
+                    in_animation = 0;
+                    move_up = 0;
+                    next_up += 90;
+                    next_down +=90;
+                    standing_bit = 1;
+                    sleeping_x = 0;
+                    sleeping_z = 0;
+                    vis = 0;
+                }
+            }
             if(vertical_angle_moved == next_down)
             {
                 in_animation = 0;
                 standing_bit = 1;
                 sleeping_x = 0;
                 sleeping_z = 0;
-                move_down = 0;
-                next_up-=90;
+                move_up = 0;
+                next_up -=90;
                 next_down -=90;
-                vis = 0;
             }
         }
-        if(vertical_angle_moved == next_up)
+        else if(move_up == 1 && torsion_angle_moved < next_clock && sleeping_x == 1)
         {
-            in_animation = 0;
-            standing_bit =1;
-            sleeping_x = 0;
-            sleeping_z = 1;
-            move_down = 0;
-            next_up +=90;
-            next_down +=90;
+            in_animation = 1;
+            rect_pos.z -=0.06;
+            torsion_angle_moved += 9;
+            if(torsion_angle_moved == next_clock)
+            {
+                in_animation = 0;
+                move_up = 0;
+                next_clock+=90;
+                next_anti +=90;
+            }
         }
-    }
-    else if(move_down == 1 && torsion_angle_moved > next_anti && sleeping_x == 1)
-    {
-        in_animation = 1;
-        //cout << next_anti << endl << vertical_angle_moved << endl << next_clock << endl << "lol" << endl;
-        rect_pos.z +=0.06;
-        torsion_angle_moved -= 9;
-        if(torsion_angle_moved == next_anti)
+        else if(move_down ==1 && vertical_angle_moved < next_up && standing_bit == 1)
         {
-            in_animation = 0;
-            move_down = 0;
-            next_clock-=90;
-            next_anti -=90;
+            in_animation = 1;
+            rect_pos.z += 0.09;
+            rect_pos.y -= 0.03;
+            vertical_angle_moved +=9;
+            if(abs(hor_count)%4==2)
+            {
+                vertical_angle_moved -=18;
+                if(vertical_angle_moved == next_down)
+                {
+                    in_animation = 0;
+                    standing_bit = 0;
+                    sleeping_z = 1;
+                    sleeping_x = 0;
+                    move_down = 0;
+                    next_up-=90;
+                    next_down -=90;
+                    vis = 0;
+                }
+            }
+            if(vertical_angle_moved == next_up)
+            {
+                in_animation = 0;
+                standing_bit = 0;
+                sleeping_x = 0;
+                sleeping_z = 1;
+                move_down = 0;
+                next_up +=90;
+                next_down +=90;
+            }
         }
+        else if(move_down == 1 && vertical_angle_moved < next_up && sleeping_z == 1)
+        {
+            in_animation = 1;
+            rect_pos.z +=0.09;
+            rect_pos.y +=0.03;
+            vertical_angle_moved +=9;
+            if(abs(hor_count)%4==2)
+            {
+                vertical_angle_moved -=18;
+                if(vertical_angle_moved == next_down)
+                {
+                    in_animation = 0;
+                    standing_bit = 1;
+                    sleeping_x = 0;
+                    sleeping_z = 0;
+                    move_down = 0;
+                    next_up-=90;
+                    next_down -=90;
+                    vis = 0;
+                }
+            }
+            if(vertical_angle_moved == next_up)
+            {
+                in_animation = 0;
+                standing_bit =1;
+                sleeping_x = 0;
+                sleeping_z = 1;
+                move_down = 0;
+                next_up +=90;
+                next_down +=90;
+            }
+        }
+        else if(move_down == 1 && torsion_angle_moved > next_anti && sleeping_x == 1)
+        {
+            in_animation = 1;
+            //cout << next_anti << endl << vertical_angle_moved << endl << next_clock << endl << "lol" << endl;
+            rect_pos.z +=0.06;
+            torsion_angle_moved -= 9;
+            if(torsion_angle_moved == next_anti)
+            {
+                in_animation = 0;
+                move_down = 0;
+                next_clock-=90;
+                next_anti -=90;
+            }
+        }
+
+        rectangle_rotation = horizontal_angle_moved;
+        glm::mat4 translateRectangle = glm::translate (rect_pos);        // glTranslatef
+        glm::mat4 rotateRectangle = glm::rotate((float)(horizontal_angle_moved*M_PI/180.0f), glm::vec3(0,0,1)); // rotate about vector (-1,1,1)
+        glm::mat4 rotateRectanglex = glm::rotate((float)(vertical_angle_moved*M_PI/180.0f), glm::vec3(1,0,0));
+        glm::mat4 rotateRectangley = glm::rotate((float)(torsion_angle_moved*M_PI/180.0f), glm::vec3(0,1,0));
+        Matrices.model *= (translateRectangle * rotateRectangle * rotateRectanglex *rotateRectangley);
+        MVP = VP * Matrices.model;
+        glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+        // draw3DObject draws the VAO given to it using current MVP matrix
+        draw3DObject(rectangle);
     }
-    //cout << hor_count << " " << ver_count << endl;
-    //cout << rect_pos.x <<endl << finish_tile_x[level_number] << endl << endl<< rect_pos.z << endl <<finish_tile_z[level_number]<< endl;
-
-    // cout << "angle_moved " << vertical_angle_moved  << endl << "next_up " << next_up << endl <<"next_down " << next_down << endl;
-    // cout << "x " << rect_pos.x << endl << "y" << rect_pos.y << endl <<"z" << rect_pos.z << endl;
-    rectangle_rotation = horizontal_angle_moved;
-    glm::mat4 translateRectangle = glm::translate (rect_pos);        // glTranslatef
-    glm::mat4 rotateRectangle = glm::rotate((float)(horizontal_angle_moved*M_PI/180.0f), glm::vec3(0,0,1)); // rotate about vector (-1,1,1)
-    glm::mat4 rotateRectanglex = glm::rotate((float)(vertical_angle_moved*M_PI/180.0f), glm::vec3(1,0,0));
-    glm::mat4 rotateRectangley = glm::rotate((float)(torsion_angle_moved*M_PI/180.0f), glm::vec3(0,1,0));
-    Matrices.model *= (translateRectangle * rotateRectangle * rotateRectanglex *rotateRectangley);
-    MVP = VP * Matrices.model;
-    glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-
-    // draw3DObject draws the VAO given to it using current MVP matrix
-    draw3DObject(rectangle);
-
     // Increment angles
-    float increments = 1;
+
 
     //camera_rotation_angle++; // Simulating camera rotation
     //  triangle_rotation = triangle_rotation + increments*triangle_rot_dir*triangle_rot_status;
@@ -1463,6 +1682,7 @@ void initGL (GLFWwindow* window, int width, int height)
     createFinishTile();
     createRectangle ();
     createTeleportTile();
+    createBackgroundTile();
 
     glClearColor (0.3f, 0.3f, 0.3f, 0.0f); // R, G, B, A
     glClearDepth (1.0f);
@@ -1490,6 +1710,7 @@ void initGL (GLFWwindow* window, int width, int height)
 
 void reset()
 {
+    is_bridge_on = 0;
     rect_pos.x = -0.6;
     rect_pos.y = 0.66;
     rect_pos.z = 0;
@@ -1513,12 +1734,28 @@ void check()
             rect_pos.z = 0 ;
         }
     }
-    int standing_falling = 0, sleepingx_l=0, sleepingx_r = 0,sleepingz_l = 0,sleepingz_r = 0;
+    if(level_number == 4 && standing_bit == 1)
+    {
+        if (abs(rect_pos.x - 4.2) <=0.01 && abs(rect_pos.z - 0)<=0.01)
+        {
+            is_bridge_on = 1;
+        }
+    }
+    if(level_number == 3 && standing_bit == 1)
+    {
+        if (abs(rect_pos.x + 0.6) <=0.01 && abs(rect_pos.z + 0.6)<=0.01)
+        {
+            reset();
+        }
+    }
+    int whatthefuck = level_end[level_number],standing_falling = 0, sleepingx_l=0, sleepingx_r = 0,sleepingz_l = 0,sleepingz_r = 0;
+    if(level_number == 4)
+        whatthefuck +=2;
     if(in_animation == 0)
     {
         if(standing_bit == 1)
         {
-            for(i=level_start[level_number]; i<level_end[level_number]; i++)
+            for(i=level_start[level_number]; i<whatthefuck; i++)
             {
                 if(abs(rect_pos.x-tile_x[i])<=0.01 && abs(rect_pos.z-tile_z[i])<=0.01)
                 {
@@ -1532,7 +1769,7 @@ void check()
         }
         else if(sleeping_x == 1)
         {
-            for(i=level_start[level_number]; i<level_end[level_number]; i++)
+            for(i=level_start[level_number]; i<whatthefuck; i++)
             {
                 if(abs(rect_pos.x-tile_x[i]-0.3)<=0.01 && abs(rect_pos.z-tile_z[i])<=0.01)
                 {
@@ -1540,7 +1777,7 @@ void check()
                     break;
                 }
             }
-            for(i=level_start[level_number]; i<level_end[level_number]; i++)
+            for(i=level_start[level_number]; i<whatthefuck; i++)
             {
                 if(abs(rect_pos.x-tile_x[i]+0.3)<=0.01 && abs(rect_pos.z-tile_z[i])<=0.01)
                 {
@@ -1555,7 +1792,7 @@ void check()
         }
         else if(sleeping_z == 1)
         {
-            for(i=level_start[level_number]; i<level_end[level_number]; i++)
+            for(i=level_start[level_number]; i<whatthefuck; i++)
             {
                 if(abs(rect_pos.x-tile_x[i])<=0.01 && abs(rect_pos.z-tile_z[i]-0.3)<=0.01)
                 {
@@ -1563,7 +1800,7 @@ void check()
                     break;
                 }
             }
-            for(i=level_start[level_number]; i<level_end[level_number]; i++)
+            for(i=level_start[level_number]; i<whatthefuck; i++)
             {
                 if(abs(rect_pos.x-tile_x[i])<=0.01 && abs(rect_pos.z-tile_z[i]+0.3)<=0.01)
                 {
@@ -1622,7 +1859,6 @@ int main (int argc, char** argv)
     format.byte_format = AO_FMT_NATIVE;
     format.matrix = 0;
     dev = ao_open_live(driver, &format, NULL);
-
     int width = 600;
     int height = 600;
     proj_type = 1;
@@ -1634,9 +1870,10 @@ int main (int argc, char** argv)
     level_end[1] =43;
     level_start[2] = 43;
     level_end[2] = 58;
-    level_start[3] = 58;
-    level_end[3] = 85;
-
+    level_start[3] = 59;
+    level_end[3] = 75;
+    level_start[4]= 75;
+    level_end[4]= 100;
 
 
     GLFWwindow* window = initGLFW(width, height);
@@ -1647,10 +1884,15 @@ int main (int argc, char** argv)
 
     /* Draw in loop */
     while (!glfwWindowShouldClose(window)) {
+
+        background_rotation += 1;
+
         string str1 = to_string(level_number + 1);
         string str2 = to_string(time_counter);
         string str3 = to_string(moves_counter);
         title_string = "Level Number: " + str1 + " TIME: " + str2 + " Moves: " + str3;
+        if(level_number == 5)
+            title_string = "YOU WON!! GAME OVER!!";
         const char *feeder = title_string.c_str();
         glfwSetWindowTitle(window, feeder);
         // clear the color and depth in the frame buffer
